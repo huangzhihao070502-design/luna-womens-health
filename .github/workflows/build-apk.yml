@@ -119,6 +119,7 @@ jobs:
           # Copy keystore
           cp luna.keystore apk/
           echo "sdk.dir=/usr/local/lib/android/sdk" > apk/local.properties
+          echo "android.useAndroidX=true" > apk/gradle.properties
 
       - name: Build APK
         run: cd apk && gradle assembleRelease
