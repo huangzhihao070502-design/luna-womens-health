@@ -25,12 +25,16 @@ jobs:
       - name: Setup Android SDK
         run: |
           export ANDROID_SDK_ROOT=/usr/local/lib/android/sdk
-          yes | ${ANDROID_SDK_ROOT}/cmdline-tools/latest/bin/sdkmanager --sdk_root=${ANDROID_SDK_ROOT} "build-tools;33.0.0" "platforms;android-33" 2>&1 | tail -5
+          yes | ${ANDROID_SDK_ROOT}/cmdline-tools/latest/bin/sdkmanager --sdk_root=${ANDROID_SDK_ROOT} "build-tools;33.0.0" "platforms;android-33"
 
       - name: Install deps and build uni-app
         run: |
           npm install
           npx uni build -p app
+          echo "=== Built resources ==="
+          ls -la dist/build/app/
+          echo "=== Resource size ==="
+          du -sh dist/build/app/
 
       - name: Generate keystore
         run: |
@@ -39,16 +43,28 @@ jobs:
             -alias luna -keyalg RSA -keysize 2048 -validity 36500 \
             -storepass lunapass123 -keypass lunapass123 \
             -dname "CN=Luna,OU=Dev,O=Luna,L=BJ,ST=BJ,C=CN"
+          ls -la luna-release.keystore
 
-      - name: Create Android project
+      - name: Setup Android project
         run: |
-          mkdir -p android-project/app/src/main/java/com/luna/app
-          mkdir -p android-project/app/src/main/res/values
+          # Create project structure
+          mkdir -p app/src/main/java/com/luna/app
+          mkdir -p app/src/main/res/values
+          mkdir -p app/src/main/assets/apps/__UNI__LUNA/www
 
-          echo "rootProject.name='Luna'" > android-project/settings.gradle
-          echo "include ':app'" >> android-project/settings.gradle
+          # Copy uni-app resources into assets
+          cp -rv dist/build/app/* app/src/main/assets/apps/__UNI__LUNA/www/
+          echo "=== Assets verification ==="
+          ls -la app/src/main/assets/apps/__UNI__LUNA/www/
+          echo "=== Asset size ==="
+          du -sh app/src/main/assets/
 
-          cat > android-project/build.gradle << 'EOF'
+          # settings.gradle
+          echo "rootProject.name='Luna'" > settings.gradle
+          echo "include ':app'" >> settings.gradle
+
+          # Root build.gradle
+          cat > build.gradle << 'EOF'
           buildscript {
               repositories { google(); mavenCentral() }
               dependencies { classpath 'com.android.tools.build:gradle:8.2.0' }
@@ -58,7 +74,8 @@ jobs:
           }
           EOF
 
-          cat > android-project/app/build.gradle << 'EOF'
+          # App build.gradle
+          cat > app/build.gradle << 'EOF'
           plugins { id 'com.android.application' }
           android {
               namespace 'com.luna.app'
@@ -70,7 +87,7 @@ jobs:
               }
               signingConfigs {
                   release {
-                      storeFile rootProject.file("../luna-release.keystore")
+                      storeFile rootProject.file("luna-release.keystore")
                       storePassword "lunapass123"
                       keyAlias "luna"
                       keyPassword "lunapass123"
@@ -82,16 +99,22 @@ jobs:
                       signingConfig signingConfigs.release
                   }
               }
+              aaptOptions {
+                  noCompress ''
+              }
           }
           EOF
 
-          cat > android-project/app/src/main/AndroidManifest.xml << 'XML'
+          # AndroidManifest
+          cat > app/src/main/AndroidManifest.xml << 'XML'
           <?xml version="1.0" encoding="utf-8"?>
           <manifest xmlns:android="http://schemas.android.com/apk/res/android">
               <uses-permission android:name="android.permission.INTERNET"/>
-              <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE"/>
-              <application android:allowBackup="true" android:label="Luna"
-                  android:hardwareAccelerated="true" android:usesCleartextTraffic="true">
+              <application
+                  android:allowBackup="true"
+                  android:label="Luna"
+                  android:hardwareAccelerated="true"
+                  android:usesCleartextTraffic="true">
                   <activity android:name="com.luna.app.MainActivity"
                       android:configChanges="orientation|keyboardHidden|screenSize"
                       android:screenOrientation="portrait"
@@ -105,7 +128,8 @@ jobs:
           </manifest>
           XML
 
-          cat > android-project/app/src/main/java/com/luna/app/MainActivity.java << 'JAVA'
+          # MainActivity
+          cat > app/src/main/java/com/luna/app/MainActivity.java << 'JAVA'
           package com.luna.app;
           import android.app.Activity;
           import android.os.Bundle;
@@ -131,21 +155,32 @@ jobs:
           }
           JAVA
 
-          echo '<?xml version="1.0" encoding="utf-8"?><resources><string name="app_name">Luna</string></resources>' > android-project/app/src/main/res/values/strings.xml
-          echo '<?xml version="1.0" encoding="utf-8"?><resources><style name="AppTheme" parent="android:Theme.Light.NoTitleBar"><item name="android:windowBackground">@android:color/white</item></style></resources>' > android-project/app/src/main/res/values/styles.xml
+          # Resources
+          echo '<?xml version="1.0" encoding="utf-8"?><resources><string name="app_name">Luna</string></resources>' > app/src/main/res/values/strings.xml
+          echo '<?xml version="1.0" encoding="utf-8"?><resources><style name="AppTheme" parent="android:Theme.Light.NoTitleBar"><item name="android:windowBackground">@android:color/white</item></style></resources>' > app/src/main/res/values/styles.xml
 
-          mkdir -p android-project/app/src/main/assets/apps/__UNI__LUNA/www
-          cp -r dist/build/app/* android-project/app/src/main/assets/apps/__UNI__LUNA/www/
+          # local.properties
+          echo "sdk.dir=/usr/local/lib/android/sdk" > local.properties
 
-          echo "sdk.dir=/usr/local/lib/android/sdk" > android-project/local.properties
+          # Move keystore into project
+          mv ../luna-release.keystore .
+
+          echo "=== Project structure ==="
+          find . -type f | head -30
 
       - name: Build APK
         run: |
-          cd android-project
-          gradle assembleRelease
+          gradle assembleRelease --info 2>&1 | tail -50
+
+      - name: Verify APK
+        run: |
+          echo "=== APK info ==="
+          find . -name "*.apk" -exec ls -lh {} \;
+          echo "=== APK contents ==="
+          unzip -l app/build/outputs/apk/release/*.apk 2>/dev/null | head -20
 
       - name: Upload APK
         uses: actions/upload-artifact@v4
         with:
           name: luna-release-apk
-          path: android-project/app/build/outputs/apk/release/*.apk
+          path: app/build/outputs/apk/release/*.apk
