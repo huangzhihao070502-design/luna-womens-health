@@ -12,133 +12,72 @@ jobs:
       - uses: actions/checkout@v4
 
       - uses: actions/setup-node@v4
-        with:
-          node-version: '20'
+        with: { node-version: '20' }
 
       - uses: actions/setup-java@v4
-        with:
-          java-version: '17'
-          distribution: 'temurin'
+        with: { java-version: '17', distribution: 'temurin' }
 
       - uses: gradle/actions/setup-gradle@v3
-        with:
-          gradle-version: '8.5'
+        with: { gradle-version: '8.5' }
 
       - name: Setup Android SDK
         run: |
-          SDK=/usr/local/lib/android/sdk
-          yes | ${SDK}/cmdline-tools/latest/bin/sdkmanager --sdk_root=${SDK} "build-tools;33.0.0" "platforms;android-33"
+          yes | /usr/local/lib/android/sdk/cmdline-tools/latest/bin/sdkmanager --sdk_root=/usr/local/lib/android/sdk "build-tools;33.0.0" "platforms;android-33"
 
-      - name: Build uni-app resources
+      - name: Build uni-app H5
         run: |
           npm install
-          npx uni build -p app
+          cp manifest.json src/manifest.json
+          cp pages.json src/pages.json
+          cat > index.html << 'HTML'
+          <!DOCTYPE html><html lang="zh-CN"><head><meta charset="UTF-8"/><meta name="viewport" content="width=device-width,user-scalable=no,initial-scale=1.0,maximum-scale=1.0,minimum-scale=1.0,viewport-fit=cover"/><title>Luna</title></head><body><div id="app"></div><script type="module" src="/src/main.ts"></script></body></html>
+          HTML
+          npx uni build -p h5
+          # Keep absolute paths - WebViewAssetLoader serves via https:// URL
 
       - name: Generate keystore
         run: |
-          $JAVA_HOME/bin/keytool -genkey -v \
-            -keystore luna-release.keystore \
-            -alias luna -keyalg RSA -keysize 2048 -validity 36500 \
-            -storepass lunapass123 -keypass lunapass123 \
-            -dname "CN=Luna,OU=Dev,O=LunaTeam,L=Beijing,ST=Beijing,C=CN"
+          $JAVA_HOME/bin/keytool -genkey -v -keystore luna.keystore -alias luna -keyalg RSA -keysize 2048 -validity 36500 -storepass lunapass123 -keypass lunapass123 -dname "CN=Luna,OU=Dev,O=LunaTeam,L=Beijing,ST=Beijing,C=CN"
 
-      - name: Build APK with Gradle
+      - name: Setup Android project
         run: |
-          set -eux
+          mkdir -p apk/app/src/main/java/com/luna/app
+          mkdir -p apk/app/src/main/res/values
 
-          # Create clean Android project in subdirectory
-          mkdir -p build-apk/app/src/main/java/com/luna/app
-          mkdir -p build-apk/app/src/main/res/values
-          mkdir -p build-apk/app/src/main/assets/apps/UNI_LUNA/www
-
-          # Copy uni-app resources
-          cp -r dist/build/app/* build-apk/app/src/main/assets/apps/UNI_LUNA/www/
-          # Add a test asset file
-          echo "TEST_ASSET_OK" > build-apk/app/src/main/assets/test_asset.txt
-          du -sh build-apk/app/src/main/assets/
-          echo "=== Asset file listing ==="
-          find build-apk/app/src/main/assets -type f | head -5
-          echo "Total files: $(find build-apk/app/src/main/assets -type f | wc -l)"
-
-          # settings.gradle with plugin repos
-          cat > build-apk/settings.gradle << 'EOF'
-          pluginManagement {
-              repositories {
-                  google()
-                  mavenCentral()
-                  gradlePluginPortal()
-              }
-          }
-          dependencyResolutionManagement {
-              repositoriesMode.set(RepositoriesMode.FAIL_ON_PROJECT_REPOS)
-              repositories {
-                  google()
-                  mavenCentral()
-              }
-          }
-          rootProject.name = 'Luna'
-          include ':app'
+          cat > apk/settings.gradle << 'EOF'
+          pluginManagement { repositories { google(); mavenCentral(); gradlePluginPortal() } }
+          rootProject.name='Luna'; include ':app'
           EOF
 
-          # Root build.gradle
-          cat > build-apk/build.gradle << 'EOF'
+          cat > apk/build.gradle << 'EOF'
           plugins { id 'com.android.application' version '8.2.0' apply false }
           EOF
 
-          # App build.gradle
-          cat > build-apk/app/build.gradle << 'EOF'
+          cat > apk/app/build.gradle << 'EOF'
           plugins { id 'com.android.application' }
           android {
-              namespace 'com.luna.app'
-              compileSdk 33
-              buildToolsVersion "33.0.0"
-              defaultConfig {
-                  applicationId "com.luna.app"
-                  minSdk 21; targetSdk 33
-                  versionCode 100; versionName "1.0.0"
-              }
-              signingConfigs {
-                  release {
-                      storeFile rootProject.file("../luna-release.keystore")
-                      storePassword "lunapass123"
-                      keyAlias "luna"
-                      keyPassword "lunapass123"
-                  }
-              }
-              buildTypes {
-                  release {
-                      minifyEnabled false
-                      signingConfig signingConfigs.release
-                  }
-              }
+              namespace 'com.luna.app'; compileSdk 33
+              defaultConfig { applicationId "com.luna.app"; minSdk 21; targetSdk 33; versionCode 100; versionName "1.0.0" }
+              signingConfigs { release { storeFile rootProject.file("luna.keystore"); storePassword "lunapass123"; keyAlias "luna"; keyPassword "lunapass123" } }
+              buildTypes { release { minifyEnabled false; signingConfig signingConfigs.release } }
           }
           EOF
 
-          # AndroidManifest
-          cat > build-apk/app/src/main/AndroidManifest.xml << 'XML'
+          cat > apk/app/src/main/AndroidManifest.xml << 'XML'
           <?xml version="1.0" encoding="utf-8"?>
           <manifest xmlns:android="http://schemas.android.com/apk/res/android">
               <uses-permission android:name="android.permission.INTERNET"/>
-              <application android:allowBackup="true" android:label="Luna"
-                  android:hardwareAccelerated="true" android:usesCleartextTraffic="true">
-                  <activity android:name="com.luna.app.MainActivity"
-                      android:configChanges="orientation|keyboardHidden|screenSize"
-                      android:screenOrientation="portrait" android:exported="true">
-                      <intent-filter>
-                          <action android:name="android.intent.action.MAIN"/>
-                          <category android:name="android.intent.category.LAUNCHER"/>
-                      </intent-filter>
+              <application android:allowBackup="true" android:label="Luna" android:hardwareAccelerated="true" android:usesCleartextTraffic="true">
+                  <activity android:name="com.luna.app.MainActivity" android:configChanges="orientation|keyboardHidden|screenSize" android:screenOrientation="portrait" android:exported="true">
+                      <intent-filter><action android:name="android.intent.action.MAIN"/><category android:name="android.intent.category.LAUNCHER"/></intent-filter>
                   </activity>
               </application>
           </manifest>
           XML
 
-          # MainActivity
-          cat > build-apk/app/src/main/java/com/luna/app/MainActivity.java << 'JAVA'
+          cat > apk/app/src/main/java/com/luna/app/MainActivity.java << 'JAVA'
           package com.luna.app;
-          import android.app.Activity;
-          import android.os.Bundle;
-          import android.webkit.*;
+          import android.app.Activity; import android.os.Bundle; import android.webkit.*;
           public class MainActivity extends Activity {
               protected void onCreate(Bundle s) {
                   super.onCreate(s);
@@ -148,45 +87,41 @@ jobs:
                   ws.setJavaScriptEnabled(true);
                   ws.setDomStorageEnabled(true);
                   ws.setAllowFileAccess(true);
-                  ws.setAllowContentAccess(true);
                   ws.setDatabaseEnabled(true);
                   ws.setUseWideViewPort(true);
                   ws.setLoadWithOverviewMode(true);
                   ws.setMixedContentMode(WebSettings.MIXED_CONTENT_ALWAYS_ALLOW);
-                  wv.setWebViewClient(new WebViewClient());
+                  final WebViewAssetLoader loader = new WebViewAssetLoader.Builder()
+                      .addPathHandler("/assets/", new WebViewAssetLoader.AssetsPathHandler(this))
+                      .addPathHandler("/static/", new WebViewAssetLoader.AssetsPathHandler(this))
+                      .addPathHandler("/", new WebViewAssetLoader.AssetsPathHandler(this))
+                      .build();
+                  wv.setWebViewClient(new WebViewClient() {
+                      public WebResourceResponse shouldInterceptRequest(WebView v, WebResourceRequest r) {
+                          return loader.shouldInterceptRequest(r.getUrl());
+                      }
+                  });
                   wv.setWebChromeClient(new WebChromeClient());
-                  wv.loadUrl("file:///android_asset/apps/UNI_LUNA/www/__uniappview.html");
+                  wv.loadUrl("https://appassets.androidplatform.net/h5/index.html");
               }
           }
           JAVA
 
-          # Resources
-          echo '<?xml version="1.0" encoding="utf-8"?><resources><string name="app_name">Luna</string></resources>' > build-apk/app/src/main/res/values/strings.xml
+          echo '<resources><string name="app_name">Luna</string></resources>' > apk/app/src/main/res/values/strings.xml
 
-          # SDK location
-          echo "sdk.dir=/usr/local/lib/android/sdk" > build-apk/local.properties
+          # Copy H5 assets
+          mkdir -p apk/app/src/main/assets/h5
+          cp -r dist/build/h5/* apk/app/src/main/assets/h5/
+          du -sh apk/app/src/main/assets/
 
           # Copy keystore
-          cp luna-release.keystore build-apk/
+          cp luna.keystore apk/
+          echo "sdk.dir=/usr/local/lib/android/sdk" > apk/local.properties
 
-          # Verify assets before build
-          echo "=== Assets exist? ==="
-          ls -la build-apk/app/src/main/assets/apps/UNI_LUNA/www/__uniappview.html
-          du -sh build-apk/app/src/main/assets/
-          echo "=== Project tree ==="
-          find build-apk -maxdepth 5 -type f | grep -v '.gradle/' | sort
+      - name: Build APK
+        run: cd apk && gradle assembleRelease
 
-          # BUILD!
-          cd build-apk
-          gradle clean assembleRelease
-
-      - name: Verify APK
-        run: |
-          ls -lh build-apk/app/build/outputs/apk/release/*.apk
-          unzip -l build-apk/app/build/outputs/apk/release/*.apk | head -25
-
-      - name: Upload APK
-        uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v4
         with:
           name: luna-release-apk
-          path: build-apk/app/build/outputs/apk/release/*.apk
+          path: apk/app/build/outputs/apk/release/*.apk
