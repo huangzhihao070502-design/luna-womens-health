@@ -33,21 +33,52 @@
 
 <script setup lang="ts">
 import { ref, onMounted } from 'vue'
-import { onLoad } from '@dcloudio/uni-app'
 
 const progress = ref(0)
-let timer: number
+const starStyles = ref<Record<string, any>>({})
+let timer: ReturnType<typeof setInterval> | null = null
+
+// Pre-generate deterministic star positions based on index
+function generateStarStyles() {
+  const styles: Record<string, any> = {}
+  const seeds = [0.1234, 0.5678, 0.9012, 0.3456, 0.7890, 0.2345, 0.6789, 0.1111, 0.2222, 0.3333,
+    0.4444, 0.5555, 0.6666, 0.7777, 0.8888, 0.9999, 0.1122, 0.3344, 0.5566, 0.7788,
+    0.9900, 0.2233, 0.4455, 0.6677, 0.8899, 0.1020, 0.3040, 0.5060, 0.7080, 0.9090,
+    0.1123, 0.3145, 0.5167, 0.7189, 0.9101, 0.1213, 0.3235, 0.5257, 0.7279, 0.9291,
+    0.1314, 0.3336, 0.5358, 0.7379, 0.9401, 0.1415, 0.3437, 0.5459, 0.7470, 0.9492]
+  for (let i = 0; i < 50; i++) {
+    const s = seeds[i] || (i * 0.0197)
+    const size = (s * 3 + 1)
+    styles[i] = {
+      left: ((s * 7 + i * 0.3) % 1 * 100) + '%',
+      top: ((s * 13 + i * 0.7) % 1 * 100) + '%',
+      width: size + 'px',
+      height: size + 'px',
+      opacity: ((s * 5 + i * 0.1) % 1 * 0.8 + 0.2),
+      animationDelay: ((s * 3) % 1 * 3) + 's'
+    }
+  }
+  return styles
+}
+
+starStyles.value = generateStarStyles()
+
+const getStarStyle = (i: number) => {
+  return starStyles.value[i] || { left: '50%', top: '50%', width: '3px', height: '3px', opacity: 0.5 }
+}
 
 onMounted(() => {
   // Mark as launched
-  uni.setStorageSync('has_launched', 'true')
+  try { uni.setStorageSync('has_launched', 'true') } catch (e) {}
 
   timer = setInterval(() => {
     progress.value += 2
     if (progress.value >= 100) {
-      clearInterval(timer)
+      if (timer) clearInterval(timer)
+      timer = null
       // Check if already logged in
-      const token = uni.getStorageSync('token')
+      let token = ''
+      try { token = uni.getStorageSync('token') || '' } catch (e) {}
       if (token) {
         uni.reLaunch({ url: '/pages/home/home' })
       } else {
@@ -56,18 +87,6 @@ onMounted(() => {
     }
   }, 60)
 })
-
-const getStarStyle = (i: number) => {
-  const size = Math.random() * 3 + 1
-  return {
-    left: Math.random() * 100 + '%',
-    top: Math.random() * 100 + '%',
-    width: size + 'px',
-    height: size + 'px',
-    opacity: Math.random() * 0.8 + 0.2,
-    animationDelay: Math.random() * 3 + 's'
-  }
-}
 </script>
 
 <style lang="scss" scoped>

@@ -1,3 +1,9 @@
+<template>
+  <view>
+    <!-- uni-app 页面插槽 - 由框架注入 -->
+  </view>
+</template>
+
 <script setup lang="ts">
 import { onLaunch, onShow, onHide } from '@dcloudio/uni-app'
 
