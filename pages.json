@@ -1,0 +1,176 @@
+{
+  "pages": [
+    {
+      "path": "pages/splash/splash",
+      "style": {
+        "navigationStyle": "custom",
+        "navigationBarTitleText": "Luna"
+      }
+    },
+    {
+      "path": "pages/onboarding/onboarding",
+      "style": {
+        "navigationStyle": "custom",
+        "navigationBarTitleText": "欢迎"
+      }
+    },
+    {
+      "path": "pages/home/home",
+      "style": {
+        "navigationStyle": "custom",
+        "navigationBarTitleText": "Luna"
+      }
+    },
+    {
+      "path": "pages/login/login",
+      "style": {
+        "navigationStyle": "custom",
+        "navigationBarTitleText": "登录"
+      }
+    },
+    {
+      "path": "pages/register/register",
+      "style": {
+        "navigationStyle": "custom",
+        "navigationBarTitleText": "注册"
+      }
+    },
+    {
+      "path": "pages/profile/profile",
+      "style": {
+        "navigationStyle": "custom",
+        "navigationBarTitleText": "个人中心"
+      }
+    },
+    {
+      "path": "pages/calendar/calendar",
+      "style": {
+        "navigationStyle": "custom",
+        "navigationBarTitleText": "日历"
+      }
+    },
+    {
+      "path": "pages/diary/diary",
+      "style": {
+        "navigationStyle": "custom",
+        "navigationBarTitleText": "日记列表"
+      }
+    },
+    {
+      "path": "pages/diary-detail/diary-detail",
+      "style": {
+        "navigationStyle": "custom",
+        "navigationBarTitleText": "日记详情"
+      }
+    },
+    {
+      "path": "pages/diary-edit/diary-edit",
+      "style": {
+        "navigationStyle": "custom",
+        "navigationBarTitleText": "编辑日记"
+      }
+    },
+    {
+      "path": "pages/mood/mood",
+      "style": {
+        "navigationStyle": "custom",
+        "navigationBarTitleText": "心情记录"
+      }
+    },
+    {
+      "path": "pages/statistics/statistics",
+      "style": {
+        "navigationStyle": "custom",
+        "navigationBarTitleText": "数据统计"
+      }
+    },
+    {
+      "path": "pages/settings/settings",
+      "style": {
+        "navigationStyle": "custom",
+        "navigationBarTitleText": "设置"
+      }
+    },
+    {
+      "path": "pages/about/about",
+      "style": {
+        "navigationStyle": "custom",
+        "navigationBarTitleText": "关于"
+      }
+    },
+    {
+      "path": "pages/record/record",
+      "style": {
+        "navigationStyle": "custom",
+        "navigationBarTitleText": "记录经期"
+      }
+    },
+    {
+      "path": "pages/ai-predict/ai-predict",
+      "style": {
+        "navigationStyle": "custom",
+        "navigationBarTitleText": "AI智能预测"
+      }
+    },
+    {
+      "path": "pages/sleep/sleep",
+      "style": {
+        "navigationStyle": "custom",
+        "navigationBarTitleText": "睡眠分析"
+      }
+    },
+    {
+      "path": "pages/report/report",
+      "style": {
+        "navigationStyle": "custom",
+        "navigationBarTitleText": "健康报告"
+      }
+    },
+    {
+      "path": "pages/index/index",
+      "style": {
+        "navigationStyle": "custom",
+        "navigationBarTitleText": "Luna"
+      }
+    }
+  ],
+  "globalStyle": {
+    "navigationBarTextStyle": "black",
+    "navigationBarTitleText": "Luna",
+    "navigationBarBackgroundColor": "transparent",
+    "backgroundColor": "#F8F7FC",
+    "navigationStyle": "custom"
+  },
+  "tabBar": {
+    "color": "#9CA3AF",
+    "selectedColor": "#8B5CF6",
+    "backgroundColor": "#FFFFFF",
+    "borderStyle": "white",
+    "list": [
+      {
+        "pagePath": "pages/home/home",
+        "text": "首页",
+        "iconPath": "static/tabbar/home.png",
+        "selectedIconPath": "static/tabbar/home-active.png"
+      },
+      {
+        "pagePath": "pages/calendar/calendar",
+        "text": "日历",
+        "iconPath": "static/tabbar/calendar.png",
+        "selectedIconPath": "static/tabbar/calendar-active.png"
+      },
+      {
+        "pagePath": "pages/diary/diary",
+        "text": "日记",
+        "iconPath": "static/tabbar/diary.png",
+        "selectedIconPath": "static/tabbar/diary-active.png"
+      },
+      {
+        "pagePath": "pages/profile/profile",
+        "text": "我的",
+        "iconPath": "static/tabbar/profile.png",
+        "selectedIconPath": "static/tabbar/profile-active.png"
+      }
+    ]
+  }
+}

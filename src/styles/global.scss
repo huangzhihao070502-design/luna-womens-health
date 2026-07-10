@@ -1,0 +1,156 @@
+/* ==========================================
+   Global Design System Variables
+   ========================================== */
+
+// 主色调
+$primary-purple: #8B5CF6;
+$primary-pink: #EC4899;
+$primary-blue: #3B82F6;
+
+// 辅助色
+$success: #10B981;
+$warning: #F59E0B;
+$danger: #EF4444;
+$info: #6B7280;
+
+// 背景色
+$bg-light-purple: #F8F7FC;
+$bg-white: #FFFFFF;
+$bg-gray: #F3F4F6;
+
+// 文字颜色
+$text-primary: #1F2937;
+$text-secondary: #6B7280;
+$text-light: #9CA3AF;
+$text-white: #FFFFFF;
+
+// 边框颜色
+$border-light: rgba(0, 0, 0, 0.05);
+$border-medium: rgba(0, 0, 0, 0.1);
+
+// 圆角规范
+$radius-card: 20px;
+$radius-button: 25px;
+$radius-input: 16px;
+$radius-small: 8px;
+$radius-large: 32px;
+
+// 间距规范
+$spacing-xs: 4px;
+$spacing-sm: 8px;
+$spacing-md: 16px;
+$spacing-lg: 24px;
+$spacing-xl: 32px;
+
+// 阴影
+$shadow-sm: 0 2px 8px rgba(0, 0, 0, 0.04);
+$shadow-md: 0 4px 16px rgba(139, 92, 246, 0.1);
+$shadow-lg: 0 8px 32px rgba(139, 92, 246, 0.15);
+
+// 渐变
+$gradient-primary: linear-gradient(135deg, #EC4899 0%, #8B5CF6 100%);
+$gradient-blue-purple: linear-gradient(135deg, #3B82F6 0%, #8B5CF6 100%);
+$gradient-purple-pink: linear-gradient(135deg, #8B5CF6 0%, #EC4899 100%);
+
+/* ==========================================
+   Utility Classes
+   ========================================== */
+
+// 毛玻璃效果
+.glass-effect {
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  background: rgba(255, 255, 255, 0.7);
+  border-radius: $radius-card;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+}
+
+// 渐变按钮
+.btn-gradient {
+  background: $gradient-primary;
+  border-radius: $radius-button;
+  border: none;
+  color: $text-white;
+  font-weight: 500;
+  padding: $spacing-sm $spacing-lg;
+  transition: opacity 0.3s ease;
+
+  &:active {
+    opacity: 0.8;
+  }
+}
+
+// 卡片样式
+.card {
+  background: $bg-white;
+  border-radius: $radius-card;
+  box-shadow: $shadow-md;
+  padding: $spacing-lg;
+}
+
+// 输入框样式
+.input-field {
+  background: $bg-gray;
+  border-radius: $radius-input;
+  border: none;
+  padding: $spacing-md;
+  font-size: 15px;
+  width: 100%;
+  box-sizing: border-box;
+
+  &:focus {
+    outline: none;
+    background: darken($bg-gray, 2%);
+  }
+}
+
+// 布局工具类
+.container {
+  padding: 0 $spacing-md;
+}
+
+.flex-center {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.flex-between {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.flex-col {
+  display: flex;
+  flex-direction: column;
+}
+
+/* ==========================================
+   Global Reset
+   ========================================== */
+page {
+  background-color: $bg-light-purple;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+  color: $text-primary;
+  font-size: 14px;
+  line-height: 1.5;
+}
+
+view, text, button, input, textarea {
+  box-sizing: border-box;
+}
+
+button {
+  margin: 0;
+  padding: 0;
+  background: none;
+
+  &::after {
+    border: none;
+  }
+}
+
+image {
+  display: block;
+}
