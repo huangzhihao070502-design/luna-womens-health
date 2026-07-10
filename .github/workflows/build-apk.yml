@@ -10,13 +10,10 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-
       - uses: actions/setup-node@v4
         with: { node-version: '20' }
-
       - uses: actions/setup-java@v4
         with: { java-version: '17', distribution: 'temurin' }
-
       - uses: gradle/actions/setup-gradle@v3
         with: { gradle-version: '8.5' }
 
@@ -24,26 +21,42 @@ jobs:
         run: |
           yes | /usr/local/lib/android/sdk/cmdline-tools/latest/bin/sdkmanager --sdk_root=/usr/local/lib/android/sdk "build-tools;33.0.0" "platforms;android-33"
 
-      - name: Build uni-app H5
+      - name: Build uni-app
         run: |
           npm install
           cp manifest.json src/manifest.json
           cp pages.json src/pages.json
-          cat > index.html << 'HTML'
-          <!DOCTYPE html><html lang="zh-CN"><head><meta charset="UTF-8"/><meta name="viewport" content="width=device-width,user-scalable=no,initial-scale=1.0,maximum-scale=1.0,minimum-scale=1.0,viewport-fit=cover"/><title>Luna</title></head><body><div id="app"></div><script type="module" src="/src/main.ts"></script></body></html>
-          HTML
-          npx uni build -p h5
-          # Keep absolute paths - WebViewAssetLoader serves via https:// URL
+          npx uni build -p app
 
       - name: Generate keystore
         run: |
           $JAVA_HOME/bin/keytool -genkey -v -keystore luna.keystore -alias luna -keyalg RSA -keysize 2048 -validity 36500 -storepass lunapass123 -keypass lunapass123 -dname "CN=Luna,OU=Dev,O=LunaTeam,L=Beijing,ST=Beijing,C=CN"
 
-      - name: Setup Android project
+      - name: Setup Android project and build APK
         run: |
+          set -eu
+
           mkdir -p apk/app/src/main/java/com/luna/app
           mkdir -p apk/app/src/main/res/values
+          mkdir -p apk/app/src/main/assets/apps/LUNA/www
 
+          # Copy uni-app resources
+          cp -r dist/build/app/* apk/app/src/main/assets/apps/LUNA/www/
+
+          # Create merged HTML that loads both service and view layers
+          cat > apk/app/src/main/assets/apps/LUNA/www/index.html << 'HTML'
+          <!DOCTYPE html><html><head><meta charset="UTF-8"/>
+          <meta name="viewport" content="width=device-width,user-scalable=no,initial-scale=1.0,maximum-scale=1.0,minimum-scale=1.0,viewport-fit=cover"/>
+          <link rel="stylesheet" href="app.css"/>
+          </head><body><div id="app"></div>
+          <script>var __uniConfig = {"globalStyle":{},"darkmode":false}</script>
+          <script src="app-config.js"></script>
+          <script src="app-service.js"></script>
+          <script src="uni-app-view.umd.js"></script>
+          </body></html>
+          HTML
+
+          # Build files
           cat > apk/settings.gradle << 'EOF'
           pluginManagement { repositories { google(); mavenCentral(); gradlePluginPortal() } }
           dependencyResolutionManagement { repositoriesMode.set(RepositoriesMode.PREFER_SETTINGS); repositories { google(); mavenCentral() } }
@@ -62,7 +75,6 @@ jobs:
               signingConfigs { release { storeFile rootProject.file("luna.keystore"); storePassword "lunapass123"; keyAlias "luna"; keyPassword "lunapass123" } }
               buildTypes { release { minifyEnabled false; signingConfig signingConfigs.release } }
           }
-          dependencies { implementation 'androidx.webkit:webkit:1.4.0' }
           EOF
 
           cat > apk/app/src/main/AndroidManifest.xml << 'XML'
@@ -89,42 +101,35 @@ jobs:
                   ws.setJavaScriptEnabled(true);
                   ws.setDomStorageEnabled(true);
                   ws.setAllowFileAccess(true);
+                  ws.setAllowContentAccess(true);
                   ws.setDatabaseEnabled(true);
                   ws.setUseWideViewPort(true);
                   ws.setLoadWithOverviewMode(true);
                   ws.setMixedContentMode(WebSettings.MIXED_CONTENT_ALWAYS_ALLOW);
-                  final WebViewAssetLoader loader = new WebViewAssetLoader.Builder()
-                      .addPathHandler("/assets/", new WebViewAssetLoader.AssetsPathHandler(this))
-                      .addPathHandler("/static/", new WebViewAssetLoader.AssetsPathHandler(this))
-                      .addPathHandler("/", new WebViewAssetLoader.AssetsPathHandler(this))
-                      .build();
-                  wv.setWebViewClient(new WebViewClient() {
-                      public WebResourceResponse shouldInterceptRequest(WebView v, WebResourceRequest r) {
-                          return loader.shouldInterceptRequest(r.getUrl());
-                      }
-                  });
                   wv.setWebChromeClient(new WebChromeClient());
-                  wv.loadUrl("https://appassets.androidplatform.net/h5/index.html");
+                  wv.setWebViewClient(new WebViewClient());
+                  wv.loadUrl("file:///android_asset/apps/LUNA/www/index.html");
               }
           }
           JAVA
 
           echo '<resources><string name="app_name">Luna</string></resources>' > apk/app/src/main/res/values/strings.xml
-
-          # Copy H5 assets
-          mkdir -p apk/app/src/main/assets/h5
-          cp -r dist/build/h5/* apk/app/src/main/assets/h5/
-          du -sh apk/app/src/main/assets/
-
-          # Copy keystore
           cp luna.keystore apk/
           echo "sdk.dir=/usr/local/lib/android/sdk" > apk/local.properties
           echo "android.useAndroidX=true" > apk/gradle.properties
 
-      - name: Build APK
-        run: cd apk && gradle assembleRelease
+          echo "=== Project ready, building... ==="
+          du -sh apk/app/src/main/assets/
+          cd apk && gradle assembleRelease
+
+      - name: Verify and upload APK
+        run: |
+          APK=apk/app/build/outputs/apk/release/app-release.apk
+          ls -lh "$APK"
+          unzip -l "$APK" | head -25
+          cp "$APK" app-release.apk
 
       - uses: actions/upload-artifact@v4
         with:
           name: luna-release-apk
-          path: apk/app/build/outputs/apk/release/*.apk
+          path: app-release.apk
