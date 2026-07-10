@@ -100,7 +100,7 @@ $gradient-purple-pink: linear-gradient(135deg, #8B5CF6 0%, #EC4899 100%);
 
   &:focus {
     outline: none;
-    background: darken($bg-gray, 2%);
+    background: #eef0f3;
   }
 }
 

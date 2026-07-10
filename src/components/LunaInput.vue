@@ -1,10 +1,12 @@
 <template>
-  <div class="luna-input" :class="{ 'is-focus': focus, 'is-disabled': disabled }">
+  <view class="luna-input" :class="{ 'is-focus': focus, 'is-disabled': disabled }">
     <!-- 左侧图标插槽 -->
-    <div v-if="$slots.prefix || icon" class="luna-input__prefix">
+    <view v-if="$slots.prefix" class="luna-input__prefix">
       <slot name="prefix"></slot>
-      <text v-if="!$slots.prefix" class="luna-input__icon-text">{{ iconTextMap[icon] || icon }}</text>
-    </div>
+    </view>
+    <view v-else-if="icon" class="luna-input__prefix">
+      <text class="luna-input__icon-text">{{ iconTextMap[icon] || icon }}</text>
+    </view>
 
     <!-- 输入框 -->
     <input
@@ -23,10 +25,11 @@
     />
 
     <!-- 右侧按钮/内容插槽 -->
-    <div v-if="$slots.suffix || buttonText" class="luna-input__suffix">
+    <view v-if="$slots.suffix" class="luna-input__suffix">
       <slot name="suffix"></slot>
+    </view>
+    <view v-else-if="buttonText" class="luna-input__suffix">
       <button
-        v-if="buttonText && !$slots.suffix"
         class="luna-input__button"
         :class="{ 'is-disabled': buttonDisabled }"
         :disabled="buttonDisabled"
@@ -34,8 +37,8 @@
       >
         {{ buttonText }}
       </button>
-    </div>
-  </div>
+    </view>
+  </view>
 </template>
 
 <script setup lang="ts">

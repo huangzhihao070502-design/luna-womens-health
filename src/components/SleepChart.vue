@@ -54,7 +54,7 @@
 <script setup lang="ts">
 import { ref, computed } from 'vue'
 
-export interface SleepDataItem {
+interface SleepDataItem {
   label: string
   value: number
   date?: string

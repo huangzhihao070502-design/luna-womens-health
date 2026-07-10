@@ -10,7 +10,7 @@
     @click="handleClick"
   >
     <slot v-if="$slots.default"></slot>
-    <span v-else>{{ text }}</span>
+    <text v-else>{{ text }}</text>
   </button>
 </template>
 

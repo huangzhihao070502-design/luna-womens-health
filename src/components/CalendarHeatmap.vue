@@ -56,7 +56,7 @@
 <script setup lang="ts">
 import { ref, computed } from 'vue'
 
-export interface CalendarDay {
+interface CalendarDay {
   date: number
   fullDate: string
   isCurrentMonth: boolean
@@ -76,16 +76,18 @@ const props = withDefaults(defineProps<Props>(), {
 })
 
 const emit = defineEmits<{
-  (e: 'select', day: CalendarDay): void
+  (e: 'select', day: CalendarDayItem): void
   (e: 'month-change', year: number, month: number): void
 }>()
+
+type CalendarDayItem = CalendarDay | null
 
 const weekDays = ['日', '一', '二', '三', '四', '五', '六']
 const today = new Date()
 const currentYear = ref(props.defaultDate.getFullYear())
 const currentMonth = ref(props.defaultDate.getMonth())
 
-const calendarDays = computed((): (CalendarDay | null)[] => {
+const calendarDays = computed((): CalendarDayItem[] => {
   const year = currentYear.value
   const month = currentMonth.value
   const firstDay = new Date(year, month, 1)
@@ -125,11 +127,13 @@ const isTodayDate = (year: number, month: number, date: number): boolean => {
   )
 }
 
-const isToday = (day: CalendarDay): boolean => {
+const isToday = (day: CalendarDayItem): boolean => {
+  if (!day) return false
+  return !!day.isToday
   return !!day.isToday
 }
 
-const getDayClass = (day: CalendarDay | null) => {
+const getDayClass = (day: CalendarDayItem) => {
   if (!day) return 'is-empty'
   return {
     'is-other-month': !day.isCurrentMonth,
@@ -138,7 +142,7 @@ const getDayClass = (day: CalendarDay | null) => {
   }
 }
 
-const selectDay = (day: CalendarDay | null) => {
+const selectDay = (day: CalendarDayItem) => {
   if (day) {
     emit('select', day)
   }

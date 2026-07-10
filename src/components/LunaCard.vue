@@ -1,5 +1,5 @@
 <template>
-  <div
+  <view
     class="luna-card"
     :class="[
       `luna-card--${padding}`,
@@ -8,7 +8,7 @@
     @click="handleClick"
   >
     <slot></slot>
-  </div>
+  </view>
 </template>
 
 <script setup lang="ts">
