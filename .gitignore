@@ -29,3 +29,6 @@ unpackage
 .env.local
 .env.*.local
 luna-release.keystore
+android/
+dist/
+node_modules/

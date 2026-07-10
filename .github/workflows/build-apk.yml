@@ -24,73 +24,51 @@ jobs:
 
       - name: Setup Android SDK
         run: |
-          export ANDROID_SDK_ROOT=/usr/local/lib/android/sdk
-          yes | ${ANDROID_SDK_ROOT}/cmdline-tools/latest/bin/sdkmanager --sdk_root=${ANDROID_SDK_ROOT} "build-tools;33.0.0" "platforms;android-33"
+          SDK=/usr/local/lib/android/sdk
+          yes | ${SDK}/cmdline-tools/latest/bin/sdkmanager --sdk_root=${SDK} "build-tools;33.0.0" "platforms;android-33"
 
-      - name: Install deps and build uni-app
+      - name: Build uni-app resources
         run: |
           npm install
           npx uni build -p app
-          echo "=== Built resources ==="
-          ls -la dist/build/app/
-          echo "=== Resource size ==="
-          du -sh dist/build/app/
 
       - name: Generate keystore
         run: |
-          echo "JAVA_HOME=$JAVA_HOME"
           $JAVA_HOME/bin/keytool -genkey -v \
             -keystore luna-release.keystore \
             -alias luna -keyalg RSA -keysize 2048 -validity 36500 \
             -storepass lunapass123 -keypass lunapass123 \
-            -dname "CN=Luna,OU=Dev,O=LunaTeam,L=Beijing,ST=Beijing,C=CN" \
-            2>&1 || (echo "keytool failed, trying alternative..." && \
-            keytool -genkey -v \
-            -keystore luna-release.keystore \
-            -alias luna -keyalg RSA -keysize 2048 -validity 36500 \
-            -storepass lunapass123 -keypass lunapass123 \
-            -dname "CN=Luna" 2>&1)
-          ls -la luna-release.keystore
+            -dname "CN=Luna,OU=Dev,O=LunaTeam,L=Beijing,ST=Beijing,C=CN"
 
-      - name: Setup Android project
+      - name: Build APK with Gradle
         run: |
           set -eux
-          # Verify build output exists
-          ls -la dist/build/app/
-          test -f dist/build/app/__uniappview.html || (echo "ERROR: uni-app build failed" && exit 1)
 
-          # Create project structure
-          mkdir -p app/src/main/java/com/luna/app
-          mkdir -p app/src/main/res/values
-          mkdir -p app/src/main/assets/apps/__UNI__LUNA/www
+          # Create clean Android project in subdirectory
+          mkdir -p build-apk/app/src/main/java/com/luna/app
+          mkdir -p build-apk/app/src/main/res/values
+          mkdir -p build-apk/app/src/main/assets/apps/__UNI__LUNA/www
 
-          # Copy uni-app resources into assets
-          cp -r dist/build/app/* app/src/main/assets/apps/__UNI__LUNA/www/
-          echo "=== Assets verification ==="
-          ls app/src/main/assets/apps/__UNI__LUNA/www/__uniappview.html
-          du -sh app/src/main/assets/
+          # Copy uni-app resources
+          cp -r dist/build/app/* build-apk/app/src/main/assets/apps/__UNI__LUNA/www/
+          du -sh build-apk/app/src/main/assets/
 
           # settings.gradle
-          echo "rootProject.name='Luna'" > settings.gradle
-          echo "include ':app'" >> settings.gradle
+          echo "rootProject.name='Luna'" > build-apk/settings.gradle
+          echo "include ':app'" >> build-apk/settings.gradle
 
           # Root build.gradle
-          cat > build.gradle << 'EOF'
-          buildscript {
-              repositories { google(); mavenCentral() }
-              dependencies { classpath 'com.android.tools.build:gradle:8.2.0' }
-          }
-          allprojects {
-              repositories { google(); mavenCentral() }
-          }
+          cat > build-apk/build.gradle << 'EOF'
+          plugins { id 'com.android.application' version '8.2.0' apply false }
           EOF
 
           # App build.gradle
-          cat > app/build.gradle << 'EOF'
+          cat > build-apk/app/build.gradle << 'EOF'
           plugins { id 'com.android.application' }
           android {
               namespace 'com.luna.app'
               compileSdk 33
+              buildToolsVersion "33.0.0"
               defaultConfig {
                   applicationId "com.luna.app"
                   minSdk 21; targetSdk 33
@@ -98,7 +76,7 @@ jobs:
               }
               signingConfigs {
                   release {
-                      storeFile rootProject.file("luna-release.keystore")
+                      storeFile rootProject.file("../luna-release.keystore")
                       storePassword "lunapass123"
                       keyAlias "luna"
                       keyPassword "lunapass123"
@@ -110,26 +88,19 @@ jobs:
                       signingConfig signingConfigs.release
                   }
               }
-              aaptOptions {
-                  noCompress ''
-              }
           }
           EOF
 
           # AndroidManifest
-          cat > app/src/main/AndroidManifest.xml << 'XML'
+          cat > build-apk/app/src/main/AndroidManifest.xml << 'XML'
           <?xml version="1.0" encoding="utf-8"?>
           <manifest xmlns:android="http://schemas.android.com/apk/res/android">
               <uses-permission android:name="android.permission.INTERNET"/>
-              <application
-                  android:allowBackup="true"
-                  android:label="Luna"
-                  android:hardwareAccelerated="true"
-                  android:usesCleartextTraffic="true">
+              <application android:allowBackup="true" android:label="Luna"
+                  android:hardwareAccelerated="true" android:usesCleartextTraffic="true">
                   <activity android:name="com.luna.app.MainActivity"
                       android:configChanges="orientation|keyboardHidden|screenSize"
-                      android:screenOrientation="portrait"
-                      android:exported="true">
+                      android:screenOrientation="portrait" android:exported="true">
                       <intent-filter>
                           <action android:name="android.intent.action.MAIN"/>
                           <category android:name="android.intent.category.LAUNCHER"/>
@@ -140,7 +111,7 @@ jobs:
           XML
 
           # MainActivity
-          cat > app/src/main/java/com/luna/app/MainActivity.java << 'JAVA'
+          cat > build-apk/app/src/main/java/com/luna/app/MainActivity.java << 'JAVA'
           package com.luna.app;
           import android.app.Activity;
           import android.os.Bundle;
@@ -167,31 +138,25 @@ jobs:
           JAVA
 
           # Resources
-          echo '<?xml version="1.0" encoding="utf-8"?><resources><string name="app_name">Luna</string></resources>' > app/src/main/res/values/strings.xml
-          echo '<?xml version="1.0" encoding="utf-8"?><resources><style name="AppTheme" parent="android:Theme.Light.NoTitleBar"><item name="android:windowBackground">@android:color/white</item></style></resources>' > app/src/main/res/values/styles.xml
+          echo '<?xml version="1.0" encoding="utf-8"?><resources><string name="app_name">Luna</string></resources>' > build-apk/app/src/main/res/values/strings.xml
 
-          # local.properties
-          echo "sdk.dir=/usr/local/lib/android/sdk" > local.properties
+          # SDK location
+          echo "sdk.dir=/usr/local/lib/android/sdk" > build-apk/local.properties
 
-          # Keystore is already at project root, verify
-          test -f luna-release.keystore || (echo "ERROR: keystore missing" && exit 1)
+          # Copy keystore
+          cp luna-release.keystore build-apk/
 
-          echo "=== Project structure ==="
-          find . -type f | head -30
-
-      - name: Build APK
-        run: |
-          gradle assembleRelease --info 2>&1 | tail -50
+          # BUILD!
+          cd build-apk
+          gradle assembleRelease
 
       - name: Verify APK
         run: |
-          echo "=== APK info ==="
-          find . -name "*.apk" -exec ls -lh {} \;
-          echo "=== APK contents ==="
-          unzip -l app/build/outputs/apk/release/*.apk 2>/dev/null | head -20
+          ls -lh build-apk/app/build/outputs/apk/release/*.apk
+          unzip -l build-apk/app/build/outputs/apk/release/*.apk | head -25
 
       - name: Upload APK
         uses: actions/upload-artifact@v4
         with:
           name: luna-release-apk
-          path: app/build/outputs/apk/release/*.apk
+          path: build-apk/app/build/outputs/apk/release/*.apk
