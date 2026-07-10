@@ -49,10 +49,10 @@ jobs:
           # Create clean Android project in subdirectory
           mkdir -p build-apk/app/src/main/java/com/luna/app
           mkdir -p build-apk/app/src/main/res/values
-          mkdir -p build-apk/app/src/main/assets/apps/__UNI__LUNA/www
+          mkdir -p build-apk/app/src/main/assets/apps/UNI_LUNA/www
 
           # Copy uni-app resources
-          cp -r dist/build/app/* build-apk/app/src/main/assets/apps/__UNI__LUNA/www/
+          cp -r dist/build/app/* build-apk/app/src/main/assets/apps/UNI_LUNA/www/
           # Add a test asset file
           echo "TEST_ASSET_OK" > build-apk/app/src/main/assets/test_asset.txt
           du -sh build-apk/app/src/main/assets/
@@ -155,7 +155,7 @@ jobs:
                   ws.setMixedContentMode(WebSettings.MIXED_CONTENT_ALWAYS_ALLOW);
                   wv.setWebViewClient(new WebViewClient());
                   wv.setWebChromeClient(new WebChromeClient());
-                  wv.loadUrl("file:///android_asset/apps/__UNI__LUNA/www/__uniappview.html");
+                  wv.loadUrl("file:///android_asset/apps/UNI_LUNA/www/__uniappview.html");
               }
           }
           JAVA
@@ -171,7 +171,7 @@ jobs:
 
           # Verify assets before build
           echo "=== Assets exist? ==="
-          ls -la build-apk/app/src/main/assets/apps/__UNI__LUNA/www/__uniappview.html
+          ls -la build-apk/app/src/main/assets/apps/UNI_LUNA/www/__uniappview.html
           du -sh build-apk/app/src/main/assets/
           echo "=== Project tree ==="
           find build-apk -maxdepth 5 -type f | grep -v '.gradle/' | sort
