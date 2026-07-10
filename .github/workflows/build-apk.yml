@@ -54,16 +54,20 @@ jobs:
 
       - name: Setup Android project
         run: |
+          set -eux
+          # Verify build output exists
+          ls -la dist/build/app/
+          test -f dist/build/app/__uniappview.html || (echo "ERROR: uni-app build failed" && exit 1)
+
           # Create project structure
           mkdir -p app/src/main/java/com/luna/app
           mkdir -p app/src/main/res/values
           mkdir -p app/src/main/assets/apps/__UNI__LUNA/www
 
           # Copy uni-app resources into assets
-          cp -rv dist/build/app/* app/src/main/assets/apps/__UNI__LUNA/www/
+          cp -r dist/build/app/* app/src/main/assets/apps/__UNI__LUNA/www/
           echo "=== Assets verification ==="
-          ls -la app/src/main/assets/apps/__UNI__LUNA/www/
-          echo "=== Asset size ==="
+          ls app/src/main/assets/apps/__UNI__LUNA/www/__uniappview.html
           du -sh app/src/main/assets/
 
           # settings.gradle
@@ -169,8 +173,8 @@ jobs:
           # local.properties
           echo "sdk.dir=/usr/local/lib/android/sdk" > local.properties
 
-          # Move keystore into project
-          mv ../luna-release.keystore .
+          # Keystore is already at project root, verify
+          test -f luna-release.keystore || (echo "ERROR: keystore missing" && exit 1)
 
           echo "=== Project structure ==="
           find . -type f | head -30
