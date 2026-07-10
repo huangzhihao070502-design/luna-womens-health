@@ -21,6 +21,8 @@ jobs:
           distribution: 'temurin'
 
       - uses: gradle/actions/setup-gradle@v3
+        with:
+          gradle-version: '8.5'
 
       - name: Setup Android SDK
         run: |
@@ -104,6 +106,11 @@ jobs:
                       signingConfig signingConfigs.release
                   }
               }
+              sourceSets {
+                  main {
+                      assets.srcDirs = ['src/main/assets']
+                  }
+              }
           }
           EOF
 
@@ -162,9 +169,16 @@ jobs:
           # Copy keystore
           cp luna-release.keystore build-apk/
 
+          # Verify assets before build
+          echo "=== Assets exist? ==="
+          ls -la build-apk/app/src/main/assets/apps/__UNI__LUNA/www/__uniappview.html
+          du -sh build-apk/app/src/main/assets/
+          echo "=== Project tree ==="
+          find build-apk -maxdepth 5 -type f | grep -v '.gradle/' | sort
+
           # BUILD!
           cd build-apk
-          gradle assembleRelease
+          gradle clean assembleRelease
 
       - name: Verify APK
         run: |
