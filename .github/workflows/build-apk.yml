@@ -53,7 +53,12 @@ jobs:
 
           # Copy uni-app resources
           cp -r dist/build/app/* build-apk/app/src/main/assets/apps/__UNI__LUNA/www/
+          # Add a test asset file
+          echo "TEST_ASSET_OK" > build-apk/app/src/main/assets/test_asset.txt
           du -sh build-apk/app/src/main/assets/
+          echo "=== Asset file listing ==="
+          find build-apk/app/src/main/assets -type f | head -5
+          echo "Total files: $(find build-apk/app/src/main/assets -type f | wc -l)"
 
           # settings.gradle with plugin repos
           cat > build-apk/settings.gradle << 'EOF'
@@ -104,11 +109,6 @@ jobs:
                   release {
                       minifyEnabled false
                       signingConfig signingConfigs.release
-                  }
-              }
-              sourceSets {
-                  main {
-                      assets.srcDirs = ['src/main/assets']
                   }
               }
           }
