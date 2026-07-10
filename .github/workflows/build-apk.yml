@@ -53,9 +53,25 @@ jobs:
           cp -r dist/build/app/* build-apk/app/src/main/assets/apps/__UNI__LUNA/www/
           du -sh build-apk/app/src/main/assets/
 
-          # settings.gradle
-          echo "rootProject.name='Luna'" > build-apk/settings.gradle
-          echo "include ':app'" >> build-apk/settings.gradle
+          # settings.gradle with plugin repos
+          cat > build-apk/settings.gradle << 'EOF'
+          pluginManagement {
+              repositories {
+                  google()
+                  mavenCentral()
+                  gradlePluginPortal()
+              }
+          }
+          dependencyResolutionManagement {
+              repositoriesMode.set(RepositoriesMode.FAIL_ON_PROJECT_REPOS)
+              repositories {
+                  google()
+                  mavenCentral()
+              }
+          }
+          rootProject.name = 'Luna'
+          include ':app'
+          EOF
 
           # Root build.gradle
           cat > build-apk/build.gradle << 'EOF'
