@@ -20,10 +20,12 @@ jobs:
           java-version: '17'
           distribution: 'temurin'
 
+      - uses: gradle/actions/setup-gradle@v3
+
       - name: Setup Android SDK
         run: |
-          ${ANDROID_SDK_ROOT}/cmdline-tools/latest/bin/sdkmanager --list 2>/dev/null || true
-          yes | ${ANDROID_SDK_ROOT}/cmdline-tools/latest/bin/sdkmanager --sdk_root=${ANDROID_SDK_ROOT} "build-tools;33.0.0" "platforms;android-33"
+          export ANDROID_SDK_ROOT=/usr/local/lib/android/sdk
+          yes | ${ANDROID_SDK_ROOT}/cmdline-tools/latest/bin/sdkmanager --sdk_root=${ANDROID_SDK_ROOT} "build-tools;33.0.0" "platforms;android-33" 2>&1 | tail -5
 
       - name: Install deps and build uni-app
         run: |
@@ -43,11 +45,9 @@ jobs:
           mkdir -p android-project/app/src/main/java/com/luna/app
           mkdir -p android-project/app/src/main/res/values
 
-          # settings.gradle
           echo "rootProject.name='Luna'" > android-project/settings.gradle
           echo "include ':app'" >> android-project/settings.gradle
 
-          # Root build.gradle
           cat > android-project/build.gradle << 'EOF'
           buildscript {
               repositories { google(); mavenCentral() }
@@ -58,7 +58,6 @@ jobs:
           }
           EOF
 
-          # App build.gradle
           cat > android-project/app/build.gradle << 'EOF'
           plugins { id 'com.android.application' }
           android {
@@ -86,7 +85,6 @@ jobs:
           }
           EOF
 
-          # AndroidManifest
           cat > android-project/app/src/main/AndroidManifest.xml << 'XML'
           <?xml version="1.0" encoding="utf-8"?>
           <manifest xmlns:android="http://schemas.android.com/apk/res/android">
@@ -107,7 +105,6 @@ jobs:
           </manifest>
           XML
 
-          # MainActivity
           cat > android-project/app/src/main/java/com/luna/app/MainActivity.java << 'JAVA'
           package com.luna.app;
           import android.app.Activity;
@@ -134,16 +131,13 @@ jobs:
           }
           JAVA
 
-          # Resources
           echo '<?xml version="1.0" encoding="utf-8"?><resources><string name="app_name">Luna</string></resources>' > android-project/app/src/main/res/values/strings.xml
           echo '<?xml version="1.0" encoding="utf-8"?><resources><style name="AppTheme" parent="android:Theme.Light.NoTitleBar"><item name="android:windowBackground">@android:color/white</item></style></resources>' > android-project/app/src/main/res/values/styles.xml
 
-          # Copy uni-app built resources
           mkdir -p android-project/app/src/main/assets/apps/__UNI__LUNA/www
           cp -r dist/build/app/* android-project/app/src/main/assets/apps/__UNI__LUNA/www/
 
-          # local.properties
-          echo "sdk.dir=${ANDROID_SDK_ROOT}" > android-project/local.properties
+          echo "sdk.dir=/usr/local/lib/android/sdk" > android-project/local.properties
 
       - name: Build APK
         run: |

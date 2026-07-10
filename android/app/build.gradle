@@ -1,0 +1,32 @@
+plugins {
+    id 'com.android.application'
+}
+android {
+    namespace 'com.luna.app'
+    compileSdk 33
+    defaultConfig {
+        applicationId "com.luna.app"
+        minSdk 21
+        targetSdk 33
+        versionCode 100
+        versionName "1.0.0"
+    }
+    signingConfigs {
+        release {
+            storeFile rootProject.file("../luna-release.keystore")
+            storePassword "lunapass123"
+            keyAlias "luna"
+            keyPassword "lunapass123"
+        }
+    }
+    buildTypes {
+        release {
+            minifyEnabled false
+            signingConfig signingConfigs.release
+        }
+    }
+    compileOptions {
+        sourceCompatibility JavaVersion.VERSION_1_8
+        targetCompatibility JavaVersion.VERSION_1_8
+    }
+}
