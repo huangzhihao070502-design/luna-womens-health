@@ -62,6 +62,7 @@ jobs:
               signingConfigs { release { storeFile rootProject.file("luna.keystore"); storePassword "lunapass123"; keyAlias "luna"; keyPassword "lunapass123" } }
               buildTypes { release { minifyEnabled false; signingConfig signingConfigs.release } }
           }
+          dependencies { implementation 'androidx.webkit:webkit:1.8.0' }
           EOF
 
           cat > apk/app/src/main/AndroidManifest.xml << 'XML'
