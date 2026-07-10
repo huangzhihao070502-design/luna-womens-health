@@ -38,11 +38,18 @@ jobs:
 
       - name: Generate keystore
         run: |
-          keytool -genkey -v \
+          echo "JAVA_HOME=$JAVA_HOME"
+          $JAVA_HOME/bin/keytool -genkey -v \
             -keystore luna-release.keystore \
             -alias luna -keyalg RSA -keysize 2048 -validity 36500 \
             -storepass lunapass123 -keypass lunapass123 \
-            -dname "CN=Luna,OU=Dev,O=Luna,L=BJ,ST=BJ,C=CN"
+            -dname "CN=Luna,OU=Dev,O=LunaTeam,L=Beijing,ST=Beijing,C=CN" \
+            2>&1 || (echo "keytool failed, trying alternative..." && \
+            keytool -genkey -v \
+            -keystore luna-release.keystore \
+            -alias luna -keyalg RSA -keysize 2048 -validity 36500 \
+            -storepass lunapass123 -keypass lunapass123 \
+            -dname "CN=Luna" 2>&1)
           ls -la luna-release.keystore
 
       - name: Setup Android project

@@ -28,3 +28,4 @@ unpackage
 .env
 .env.local
 .env.*.local
+luna-release.keystore
